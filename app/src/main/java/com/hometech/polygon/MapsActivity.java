@@ -1,6 +1,7 @@
 package com.hometech.polygon;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -26,6 +27,8 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
 
     private Polygon polygon;
     public final static String MAP_OPTION = "map_option";
+    PolygonOptions polygonOptions;
+    private int polygonNumber = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +62,7 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
+
                 Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).draggable(true));
                 marker.setTag(latLng);
                 markerList.add(marker);
@@ -76,18 +80,12 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
 
             @Override
             public void onMarkerDrag(Marker marker) {
-                System.out.println("Before update the list");
-                System.out.println(Arrays.toString(points.toArray()));
-                System.out.println(Arrays.toString(markerList.toArray()));
                 updateMarkerLocation(marker, false);
             }
 
             @Override
             public void onMarkerDragEnd(Marker marker) {
                 updateMarkerLocation(marker, true);
-                System.out.println("After update the list");
-                System.out.println(Arrays.toString(points.toArray()));
-                System.out.println(Arrays.toString(markerList.toArray()));
 
             }
         });
@@ -100,10 +98,11 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
 
     public void newPolygon(View view) {
 
+//
         points.clear();
         markerList.clear();
-
-        mMap.clear();
+        polygon = null;
+//        mMap.clear();
     }
 
     private void updateMarkerLocation(Marker marker, boolean calculate) {
@@ -119,10 +118,10 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
         if (polygon != null) {
             polygon.remove();
         }
-        PolygonOptions polygonOptions = new PolygonOptions();
+        polygonOptions = new PolygonOptions();
         polygonOptions.addAll(latLngList);
         polygon = mMap.addPolygon(polygonOptions);
-    }
 
+    }
 
 }
