@@ -17,18 +17,35 @@ import com.google.android.gms.maps.model.PolygonOptions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallback {
+
+    // Map a marker id to its corresponding list (represented by the root marker id)
+    HashMap<String, String> markerToList = new HashMap<>();
+
+    // A list of markers for each polygon (designated by the marker root).
+    HashMap<String, List<Marker>> polygonMarkers = new HashMap<>();
+
+    // A list of polygon points for each polygon (designed by the marker root).
+    HashMap<String, List<LatLng>> polygonPoints = new HashMap<>();
+
+    // List of polygons (designated by marker root).
+    HashMap<String, Polygon> polygons = new HashMap<>();
+
+    // The active polygon (designated by marker root) - polygon added to.
+    String markerListKey;
+
+    // Flag used to record when the 'New Polygon' button is pressed.  Next map
+// click starts a new polygon.
+    boolean newPolygon = false;
 
     private GoogleMap mMap;
     private List<LatLng> points = new ArrayList<>();
     private List<Marker> markerList = new ArrayList<>();
 
-    private Polygon polygon;
-    public final static String MAP_OPTION = "map_option";
     PolygonOptions polygonOptions;
-    private int polygonNumber = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,9 +82,32 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
 
                 Marker marker = mMap.addMarker(new MarkerOptions().position(latLng).draggable(true));
                 marker.setTag(latLng);
+
+                // Special case for very first marker.
+                if (polygonMarkers.size() == 0) {
+                    polygonMarkers.put(marker.getId(), new ArrayList<Marker>());
+                    // only 0 or 1 polygons so just add it to new one or existing one.
+                    markerList = new ArrayList<>();
+                    points = new ArrayList<>();
+                    polygonMarkers.put(marker.getId(), markerList);
+                    polygonPoints.put(marker.getId(), points);
+                    markerListKey = marker.getId();
+                }
+
+                if (newPolygon) {
+                    newPolygon = false;
+                    markerList = new ArrayList<>();
+                    points = new ArrayList<>();
+                    polygonMarkers.put(marker.getId(),markerList);
+                    polygonPoints.put(marker.getId(),points);
+                    markerListKey = marker.getId();
+                }
+
                 markerList.add(marker);
                 points.add(latLng);
-                drawPolygon(points);
+                markerToList.put(marker.getId(), markerListKey);
+
+                drawPolygon(markerListKey, points);
             }
         });
 
@@ -92,29 +132,30 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
 
     }
 
-    public void closePolygon(View view) {
-
-    }
 
     public void newPolygon(View view) {
-
-//
-        points.clear();
-        markerList.clear();
-        polygon = null;
-//        mMap.clear();
+        newPolygon = true;
     }
 
     private void updateMarkerLocation(Marker marker, boolean calculate) {
+
+        // Use the marker to figure out which polygon list to use...
+        List<LatLng> pts = polygonPoints.get(markerToList.get(marker.getId()));
+
+        // This is much the same except use the retrieved point list.
         LatLng latLng = (LatLng) marker.getTag();
-        int position = points.indexOf(latLng);
-        points.set(position, marker.getPosition());
+        int position = pts.indexOf(latLng);
+        pts.set(position, marker.getPosition());
         marker.setTag(marker.getPosition());
-        drawPolygon(points);
+        drawPolygon(markerToList.get(marker.getId()), pts);
 
     }
 
-    private void drawPolygon(List<LatLng> latLngList) {
+
+    private void drawPolygon(String mKey, List<LatLng> latLngList) {
+
+        // Use the existing polygon (if any) for the root marker.
+        Polygon polygon = polygons.get(mKey);
         if (polygon != null) {
             polygon.remove();
         }
@@ -122,6 +163,8 @@ public class MapsActivity extends AbstractMapActivity implements OnMapReadyCallb
         polygonOptions.addAll(latLngList);
         polygon = mMap.addPolygon(polygonOptions);
 
+        // And update the list for the root marker.
+        polygons.put(mKey, polygon);
     }
 
 }
